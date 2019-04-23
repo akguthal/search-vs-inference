@@ -22,6 +22,12 @@ class ConstraintNetwork:
         self.constraints = constraints
         self.adjacency_list = {}
         self.generate_adjacency_list()
+        
+    def get_nodes(self):
+        return self.nodes
+    
+    def get_constraints(self):
+        return self.constraints
 
     """
         Generates an adjacency list from the list of constraints.
@@ -43,7 +49,7 @@ class ConstraintNetwork:
     """
     def print_adjacency_list(self):
         for node in self.adjacency_list:
-            print('Node', node)
+            print('Node ' + node)
             for constraint in self.adjacency_list[node]:
                 constraint.print_constraint()
             print('')
