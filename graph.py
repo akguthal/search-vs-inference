@@ -1,14 +1,14 @@
 import copy 
 
 class Constraint:
-    def __init__(self, node1, node2, constraint_type):
+    def __init__(self, node1, constraint_type, node2):
         self.node1 = node1
-        self.node2 = node2
         self.constraint_type = constraint_type
+        self.node2 = node2
     
     def print_constraint(self):
         print(self.node1, self.constraint_type, self.node2)
-
+        
 class ConstraintNetwork:
     """
         Constructor for the Constraint Network class - stores variables and generates an adjacency list.
@@ -58,7 +58,7 @@ class ConstraintNetwork:
         Function to initialize and run the search algorithm.
     """
     def search(self):
-        unassigned = nodes.keys()
+        unassigned = self.nodes.keys() # Should this be self.nodes.keys()?
         unassigned.sort(key=lambda x : len(self.nodes[x])) #sort nodes from smallest to largest domain
         self.solutions = [] #store solutions in class
         self.nodes_expanded = 0 #store expanded nodes in class
@@ -139,19 +139,58 @@ class ConstraintNetwork:
                 return False # None of the above statements are true, so the constraint is broken
         
         return True # All constraints in the list are still valid
-        
     
-nodes = {}
-nodes['A'] = [1,2,3,4]
-nodes['B'] = [1,2,3,4]
-nodes['C'] = [1,2,3,4]
-nodes['D'] = [1,2,3,4]
+    def make_arc_consistent(self, float):
+        node1 = self.node1
+#        node2 = self.node2
+#        rule = self.constraint_type
+#        
+#        if isinstance(n1, int):
+#            n1val = n1
+#        if isinstance(n2, int):
+#            n2val = n2
+#        
+#        for n1Val in 
+#        if (self.node1Val is not None) and (self.node2Val is not None):
+#                if rule == '>' and (n1val > n2val):
+#                    continue
+#                if rule == '<' and (n1val < n2val):
+#                    continue
+#                if rule == '<=' and (n1val <= n2val):
+#                    continue
+#                if rule == '>=' and (n1val >= n2val):
+#                    continue                    
+#                if rule == '=' and (n1val == n2val):
+#                    continue
+#                if rule == '!=' and (n1val != n2val):
+#                    continue
+#                
+#                return False # None of the above statements are true, so the constraint is broken
+#            return True
+#        else:
+#            return False
 
-c1 = Constraint('A', 'B', '>')
-c2 = Constraint('C', 'B', '>')
-c3 = Constraint('A', 'C', '=')
-c4 = Constraint('A', 'D', '<')
+
+nodess = {}
+nodess['A'] = [1,2,3,4]
+nodess['B'] = [1,2,3,4]
+nodess['C'] = [1,2,3,4]
+nodess['D'] = [1,2,3,4]
+
+# Binary constraints
+c1 = Constraint('A', '>', 'B')
+c2 = Constraint('C', '>', 'B')
+c3 = Constraint('A', '=', 'C')
+c4 = Constraint('A', '>', 'D')
+
+# Example single constraint
+#c5 = Constraint('A', '=', 3)
+
 constraints = [c1, c2, c3, c4]
 
-cn = ConstraintNetwork(nodes, constraints)
+cn = ConstraintNetwork(nodess, constraints)
 print(cn.search())
+cn.print_adjacency_list()
+
+### AC Test ###
+#cn.make_arc_consistent(1.0)
