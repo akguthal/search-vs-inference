@@ -140,36 +140,83 @@ class ConstraintNetwork:
         
         return True # All constraints in the list are still valid
     
-    def make_arc_consistent(self, float):
-        node1 = self.node1
-#        node2 = self.node2
-#        rule = self.constraint_type
-#        
-#        if isinstance(n1, int):
-#            n1val = n1
-#        if isinstance(n2, int):
-#            n2val = n2
-#        
-#        for n1Val in 
-#        if (self.node1Val is not None) and (self.node2Val is not None):
-#                if rule == '>' and (n1val > n2val):
-#                    continue
-#                if rule == '<' and (n1val < n2val):
-#                    continue
-#                if rule == '<=' and (n1val <= n2val):
-#                    continue
-#                if rule == '>=' and (n1val >= n2val):
-#                    continue                    
-#                if rule == '=' and (n1val == n2val):
-#                    continue
-#                if rule == '!=' and (n1val != n2val):
-#                    continue
-#                
-#                return False # None of the above statements are true, so the constraint is broken
-#            return True
-#        else:
-#            return False
-
+    def isAC(self, n1val, rule, n2val):
+        if rule == '>' and (n1val > n2val):
+            print("\t\ttrue")
+            return True
+        if rule == '<' and (n1val < n2val):
+            print("\t\ttrue")
+            return True
+        if rule == '<=' and (n1val <= n2val):
+            print("\t\ttrue")
+            return True
+        if rule == '>=' and (n1val >= n2val):
+            print("\t\ttrue")
+            return True
+        if rule == '=' and (n1val == n2val):
+            print("\t\ttrue")
+            return True
+        if rule == '!=' and (n1val != n2val):
+            print("\t\ttrue")
+            return True
+        print("\t\tfalse")
+        return False
+    
+    def reverse_constraint_type(self, rule):
+        if rule == '>':
+            return '<'
+        if rule == '<':
+            return '>'
+        if rule == '<=':
+            return '>='
+        if rule == '>=':
+            return '<='
+        if rule == '=':
+            return '!='
+        if rule == '!=':
+            return '='
+        
+    def make_arc_consistent(self, ratio):
+        somethingChanged = True
+        queue = self.constraints
+        while somethingChanged:
+            somethingChanged = False
+            for con in queue:
+                n1 = con.node1
+                n2 = con.node2
+                n1Domain = self.nodes[n1]
+                n2Domain = self.nodes[n2]
+                operation = con.constraint_type
+                for n1TestVal in n1Domain:
+                    n1Val_AC_n2Val = False
+                    for n2TestVal in n2Domain:
+                        print("Testing " + str(n1TestVal) + operation + str(n2TestVal))
+                        if self.isAC(n1TestVal, operation, n2TestVal):
+                            n1Val_AC_n2Val = True
+                    if not n1Val_AC_n2Val:
+                        print("Removing " + str(n1TestVal) + " from " + n1)
+                        n1Domain.remove(n1TestVal)
+                        somethingChanged = True
+                    else:
+                        print("Keeping " + str(n1TestVal) + " in " + n1)
+                        
+                n1 = con.node2
+                n2 = con.node1
+                n1Domain = self.nodes[n1]
+                n2Domain = self.nodes[n2]
+                operation = self.reverse_constraint_type(con.constraint_type)
+                for n1TestVal in n1Domain:
+                    n1Val_AC_n2Val = False
+                    for n2TestVal in n2Domain:
+                        print("Testing " + str(n1TestVal) + operation + str(n2TestVal))
+                        if self.isAC(n1TestVal, operation, n2TestVal):
+                            n1Val_AC_n2Val = True
+                    if not n1Val_AC_n2Val:
+                        print("Removing " + str(n1TestVal) + " from " + n1)
+                        n1Domain.remove(n1TestVal)
+                        somethingChanged = True
+                    else:
+                        print("Keeping " + str(n1TestVal) + " in " + n1)
 
 nodess = {}
 nodess['A'] = [1,2,3,4]
@@ -181,7 +228,7 @@ nodess['D'] = [1,2,3,4]
 c1 = Constraint('A', '>', 'B')
 c2 = Constraint('C', '>', 'B')
 c3 = Constraint('A', '=', 'C')
-c4 = Constraint('A', '>', 'D')
+c4 = Constraint('A', '<', 'D')
 
 # Example single constraint
 #c5 = Constraint('A', '=', 3)
@@ -189,8 +236,8 @@ c4 = Constraint('A', '>', 'D')
 constraints = [c1, c2, c3, c4]
 
 cn = ConstraintNetwork(nodess, constraints)
-print(cn.search())
-cn.print_adjacency_list()
+#print(cn.search())
+#cn.print_adjacency_list()
 
 ### AC Test ###
-#cn.make_arc_consistent(1.0)
+cn.make_arc_consistent(1.0)
