@@ -17,10 +17,40 @@ class ConstraintNetwork:
             nodes (dict(str => list(int))): Mapping of node keys (str) to domains (int list)
             constraints (list(int)): List of type Constraint
     """
-    def __init__(self, nodes, constraints):
-        self.nodes = nodes
-        self.constraints = constraints
+    def __init__(self, filename):
+
+        self.nodes = {}
+        self.constraints = []
         self.adjacency_list = {}
+
+        f = open("problems/"+filename, "r")
+        reading = "nodes"
+        for line in f:
+            tokens = filter(lambda x : (x != '' and x != '\n'), line.split(','))
+            tokens = [x.replace("\n", "") for x in tokens]            
+
+            if (tokens[0] == "Nodes"):
+                reading = "nodes"
+                
+            elif (tokens[0] == "Constraints"):
+                reading = "constraints"
+
+            elif (reading == "nodes"):
+                node = tokens[0]
+                domain = [float(i) for i in tokens[1:]]
+                self.nodes[node] = domain
+
+            elif (reading == "constraints"):
+                n1 = tokens[0]
+                constraint_type = tokens[1]
+                n2 = tokens[2]
+                if (self.is_number(n1)):
+                    n1 = float(n1)
+                if (self.is_number(n2)):
+                    n2 = float(n2)
+                constraint = Constraint(n1, constraint_type, n2)
+                self.constraints.append(constraint)            
+
         self.generate_adjacency_list()
         
     def get_nodes(self):
@@ -29,6 +59,12 @@ class ConstraintNetwork:
     def get_constraints(self):
         return self.constraints
 
+    def get_num_values(self):
+        total_values = 0
+        for n in self.nodes.keys():
+            total_values = total_values + len(self.nodes[n])
+        return total_values
+
     """
         Generates an adjacency list from the list of constraints.
     """
@@ -36,12 +72,12 @@ class ConstraintNetwork:
         for constraint in self.constraints:
             if (constraint.node1 in self.adjacency_list):
                 self.adjacency_list[constraint.node1].append(constraint)
-            else:
+            elif (not isinstance(constraint.node1, float)):
                 self.adjacency_list[constraint.node1] = [constraint]
             
             if (constraint.node2 in self.adjacency_list):
                 self.adjacency_list[constraint.node2].append(constraint)
-            else:
+            elif (not isinstance(constraint.node2, float)):
                 self.adjacency_list[constraint.node2] = [constraint]
 
     """
@@ -106,9 +142,9 @@ class ConstraintNetwork:
             n2val = None
 
             # First, check if either variable in this constraint is simply a number
-            if isinstance(n1, int):
+            if isinstance(n1, float):
                 n1val = n1
-            if isinstance(n2, int):
+            if isinstance(n2, float):
                 n2val = n2
 
             # Assign values to the nodes so we can check if the constraint is satisfied
@@ -122,135 +158,110 @@ class ConstraintNetwork:
                     n1val = known[n1]
             
             # There is a known value for both nodes in the constraint
-            # Can this be replaced with self.isAC(n1val, rule, n2val) somehow?
             if (n1val is not None) and (n2val is not None):
-                if rule == '>' and (n1val > n2val):
-                    continue
-                if rule == '<' and (n1val < n2val):
-                    continue
-                if rule == '<=' and (n1val <= n2val):
-                    continue
-                if rule == '>=' and (n1val >= n2val):
-                    continue                    
-                if rule == '=' and (n1val == n2val):
-                    continue
-                if rule == '!=' and (n1val != n2val):
-                    continue
-                
-                return False # None of the above statements are true, so the constraint is broken
-        
+                if (not self.consistent(n1val, n2val, rule)):
+                    return False                
+                        
         return True # All constraints in the list are still valid
     
-    def isAC(self, n1val, rule, n2val):
+    def consistent(self, n1val, n2val, rule):
+        valid = False
+
         if rule == '>' and (n1val > n2val):
-            return True
+            valid = True
         if rule == '<' and (n1val < n2val):
-            return True
+            valid = True
         if rule == '<=' and (n1val <= n2val):
-            return True
+            valid = True
         if rule == '>=' and (n1val >= n2val):
-            return True
+            valid = True                    
         if rule == '=' and (n1val == n2val):
-            return True
+            valid = True
         if rule == '!=' and (n1val != n2val):
+            valid = True   
+
+        return valid     
+
+    def arc_consistency(self, ratio):
+        changed = 1
+        
+        self.arc_total_values = (self.get_num_values() - len(self.nodes.keys())) * ratio
+        self.arc_checked_values = 0
+
+        if (self.arc_total_values < 1):
+            return 
+
+        while (changed == 1):
+            changed = 0
+            for node in self.adjacency_list.keys():
+                constraints = self.adjacency_list[node]
+                check_node = self.trim_domain(node, constraints)
+                if (check_node == -1):
+                    return
+                changed = check_node or (changed == 1)
+            
+
+
+    def trim_domain(self, node, constraints):
+        domain = self.nodes[node]
+        new_domain = copy.deepcopy(domain)
+        trimmed = 0
+        for cons in constraints:
+            for val_to_check in new_domain:
+                if (val_to_check not in domain):
+                    continue
+                
+                if node == cons.node1:
+                    n1val = val_to_check
+                    other = "node2"
+                else:
+                    n2val = val_to_check
+                    other = "node1"
+                
+                if isinstance(getattr(cons, other), float):
+                    other_domain = [getattr(cons, other)]
+                else:
+                    other_domain = self.nodes[getattr(cons, other)]
+
+                valid_other_value = False
+
+                for other_val in other_domain:
+                    if (other == "node1"):
+                        n1val = other_val
+                    else:
+                        n2val = other_val
+                        
+                    valid_other_value = valid_other_value or self.consistent(n1val, n2val, cons.constraint_type)
+
+                if (not valid_other_value):
+                    self.nodes[node].remove(val_to_check)
+                    self.arc_checked_values = self.arc_checked_values + 1
+                    if (self.arc_checked_values >= self.arc_total_values):
+                        return -1
+                    trimmed = 1        
+        return trimmed
+
+    def is_number(self, s):
+        try:
+            float(s)
             return True
+        except ValueError:
+            pass
+        try:
+            import unicodedata
+            unicodedata.numeric(s)
+            return True
+        except (TypeError, ValueError):
+            pass
         return False
-    
-    # Used to flip constraints around, e.g. A > B becomes B < A
-    # Allows iteration through constraints to check both related nodes
-    def flip_constraint_type(self, rule):
-        if rule == '>':
-            return '<'
-        if rule == '<':
-            return '>'
-        if rule == '<=':
-            return '>='
-        if rule == '>=':
-            return '<='
-        if rule == '=':
-            return '='
-        if rule == '!=':
-            return '!='
-        
-    # Tests each value in n1's domain for arc consistency with n2's domain
-    # n1's domain is changed, while n2's domain remains the same.
-    # 'operation' refers to the constraint type/rule/whatever you want to call it.
-    def test_for_arc_consistency(self, n1, n2, n1Domain, n2Domain, operation):
-        # Keep a flag to see if anything has changed
-        somethingChanged = False
-        
-        # Looping through each value in domain 1
-        for n1TestVal in n1Domain:
-            # Initializing a temporary variable to remember if this test value is arc-consistent with n2
-            n1Val_AC_n2Val = False
-            
-            # Looping through values in domain 2
-            for n2TestVal in n2Domain:
-                # If the value is arc-consistent
-                if self.isAC(n1TestVal, operation, n2TestVal):
-                    n1Val_AC_n2Val = True # Set the flag to true
-            
-            # If the flag has not been set to true, it must not be arc-consistent with domain 2
-            if not n1Val_AC_n2Val:
-                # Remove the value
-                n1Domain.remove(n1TestVal)
-                somethingChanged = True # And since you removed something, something has changed
-        
-        # Domain 1 has been changed so it is arc-consistent with domain 2.                
-        # Return the flag that something has changed
-        return somethingChanged 
-        
-    # Will probably be renamed to "AC1" or have a switch for which AC algorithm to use
-    # Makes itself (the constraint network) arc-consistent
-    # 'ratio' will be used later to interpolate between search and inference
-    def make_arc_consistent(self, ratio):
-        # Flag to see if something has changed (for AC-1)
-        somethingChanged = True
-        
-        # Keep looping as long as something is changing
-        while somethingChanged:
-            somethingChanged = False # Assume nothing has changed
-            
-            # Loop over all of the constraints in the network
-            for con in self.constraints:
-                # Setting node 1 and 2 for each constraint
-                n1 = con.node1
-                n2 = con.node2
-                n1Domain = self.nodes[n1]
-                n2Domain = self.nodes[n2]
-                operation = con.constraint_type
-                
-                # Make domain 1 arc-consistent and remember if something has changed
-                somethingChanged1 = self.test_for_arc_consistency(n1, n2, n1Domain, n2Domain, operation)
-                
-                # Make domain 2 arc-consistentand remember if something has changed
-                operation = self.flip_constraint_type(con.constraint_type) # Flipping the operation around
-                somethingChanged2 = self.test_for_arc_consistency(n2, n1, n2Domain, n1Domain, operation)
-            
-            # Check if something has changed in either domain
-            somethingChanged = somethingChanged1 or somethingChanged2
-        
-# nodess['VariableName'] = [List, of, domain, values]
-nodess = {}
-nodess['A'] = [1,2,3,4]
-nodess['B'] = [1,2,3,4]
-nodess['C'] = [1,2,3,4]
-nodess['D'] = [1,2,3,4]
 
-# Binary constraints
-c1 = Constraint('A', '>', 'B')
-c2 = Constraint('C', '>', 'B')
-c3 = Constraint('A', '=', 'C')
-c4 = Constraint('A', '<', 'D')
-constraints = [c1, c2, c3, c4]
+cn = ConstraintNetwork("prob1.csv")
+print("Number of values before AC: ", cn.get_num_values())
+cn.arc_consistency(1)
+print(cn.nodes)
+print("Number of values after AC: ", cn.get_num_values())
+results = cn.search()
+print(results[0][0])
+print("Number of results: ", len(results[0]))
+print("Nodes expanded: ", results[1])
 
-# Example single constraint
-#c5 = Constraint('A', '=', 3)
-#constraints = [c1, c2, c3, c4, c5]
-
-cn = ConstraintNetwork(nodess, constraints)
-#print(cn.search())
-#cn.print_adjacency_list()
-
-### AC Test ###
-cn.make_arc_consistent(1.0)
