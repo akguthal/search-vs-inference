@@ -92,13 +92,16 @@ class ConstraintNetwork:
 
     """
         Function to initialize and run the search algorithm.
+
+        Args:
+            all_solutions (bool): Determines whether to return all solutions, or first one. By default, it returns all solutions.
     """
-    def search(self):
+    def search(self, all_solutions = True):
         unassigned = self.nodes.keys() # Should this be self.nodes.keys()?
         unassigned.sort(key=lambda x : len(self.nodes[x])) #sort nodes from smallest to largest domain
         self.solutions = [] #store solutions in class
         self.nodes_expanded = 0 #store expanded nodes in class
-        self.run_search({}, unassigned) #run search with an empty set for known
+        self.run_search({}, unassigned, all_solutions) #run search with an empty set for known
         return (self.solutions, self.nodes_expanded)
     
 
@@ -109,10 +112,10 @@ class ConstraintNetwork:
             known (dict (str => int)): A mapping of nodes (str) to assigned values (int)
             unassigned (list(str)): A list of nodes that haven't been checked yet
     """
-    def run_search(self, known, unassigned):
+    def run_search(self, known, unassigned, all_solutions):
         if (len(unassigned) == 0): # This is a solution - all nodes have been assigned a value
             self.solutions.append(known) # Add it to our list of solutions
-            return
+            return 1
 
         node = unassigned.pop(0) 
         domain = self.nodes[node]
@@ -120,8 +123,10 @@ class ConstraintNetwork:
             if (self.check_validity(known, node, val)): # run validity check on this value in the node's domain
                 new_known = copy.deepcopy(known)
                 new_known[node] = val
-                branch = self.run_search(new_known, copy.deepcopy(unassigned)) # add this node => val to the known set, and go deeper
+                branch = self.run_search(new_known, copy.deepcopy(unassigned), all_solutions) # add this node => val to the known set, and go deeper
                 self.nodes_expanded = self.nodes_expanded + 1 
+                if (not(all_solutions)) and (branch == 1):
+                    return 1
         
 
     """
@@ -255,69 +260,69 @@ class ConstraintNetwork:
             pass
         return False
 
-#cn = ConstraintNetwork("sudoku.csv")
-#print("Number of values before AC: ", cn.get_num_values())
-#print("Running AC")
-#cn.arc_consistency(1)
-#print("Nodes in CSP: ", cn.nodes)
-#print("Number of values after AC: ", cn.get_num_values())
-#results = cn.search()
-#print("First solution:", results[0][0])
-#print("Number of results: ", len(results[0]))
-#print("Nodes expanded: ", results[1])
+cn = ConstraintNetwork("test.csv")
+print("Number of values before AC: ", cn.get_num_values())
+print("Running AC")
+cn.arc_consistency(1)
+print("Nodes in CSP: ", cn.nodes)
+print("Number of values after AC: ", cn.get_num_values())
+results = cn.search(False)
+print("First solution:", results[0][0])
+print("Number of results: ", len(results[0]))
+print("Nodes expanded: ", results[1])
 
-import time
-import numpy as np
+# import time
+# import numpy as np
 
-allMinTimes = []
-allMinRatios = []
-for linspaceSpacing in np.linspace(1, 50, 50):
-    print("Linspace Spacing: " + str(int(linspaceSpacing)))
-    allRatios = np.linspace(0.0, 1.0, int(linspaceSpacing))
-    allTimes = []
+# allMinTimes = []
+# allMinRatios = []
+# for linspaceSpacing in np.linspace(1, 50, 50):
+#     print("Linspace Spacing: " + str(int(linspaceSpacing)))
+#     allRatios = np.linspace(0.0, 1.0, int(linspaceSpacing))
+#     allTimes = []
     
-    print("All ratios: " + str(allRatios))
+#     print("All ratios: " + str(allRatios))
     
-    for ratio in allRatios:
-        totalTime = 0.0
-        nTrials = 1000
-        for i in range(nTrials):
-            cn = ConstraintNetwork("sudoku.csv")
+#     for ratio in allRatios:
+#         totalTime = 0.0
+#         nTrials = 1000
+#         for i in range(nTrials):
+#             cn = ConstraintNetwork("sudoku.csv")
             
-            start = time.time()
-            cn.arc_consistency(ratio)
-            results = cn.search()
-            end = time.time()
+#             start = time.time()
+#             cn.arc_consistency(ratio)
+#             results = cn.search()
+#             end = time.time()
             
-            totalTime += (end - start)
-        print("Ratio: " + str(ratio) + "\tTime taken: " + str(totalTime/float(nTrials)))
-        allTimes.append(totalTime/float(nTrials))
+#             totalTime += (end - start)
+#         print("Ratio: " + str(ratio) + "\tTime taken: " + str(totalTime/float(nTrials)))
+#         allTimes.append(totalTime/float(nTrials))
     
-    import matplotlib.pyplot as plt
-    minIdx = np.argmin(allTimes)
-    print("Min ratio: " + str(allRatios[minIdx]))
-    print("Min time: " + str(allTimes[minIdx]))
+#     import matplotlib.pyplot as plt
+#     minIdx = np.argmin(allTimes)
+#     print("Min ratio: " + str(allRatios[minIdx]))
+#     print("Min time: " + str(allTimes[minIdx]))
     
-    allMinRatios.append(allRatios[minIdx])
-    allMinTimes.append(allTimes[minIdx])
+#     allMinRatios.append(allRatios[minIdx])
+#     allMinTimes.append(allTimes[minIdx])
     
-    plt.figure(1)
-    plt.plot(allRatios, allTimes)
-    plt.axis([0.0, 1.0, 0.0, 0.006])
-    plt.title(str(int(linspaceSpacing)) + " Spacings between Ratio Values of 0.0 and 1.0")
-    plt.xlabel("Ratio")
-    plt.ylabel("Average time (sec)")
-    plt.savefig("graph" + str(int(linspaceSpacing)) + ".png", dpi=800, bbox_inches="tight", pad_inches=0)
-    plt.close()
+#     plt.figure(1)
+#     plt.plot(allRatios, allTimes)
+#     plt.axis([0.0, 1.0, 0.0, 0.006])
+#     plt.title(str(int(linspaceSpacing)) + " Spacings between Ratio Values of 0.0 and 1.0")
+#     plt.xlabel("Ratio")
+#     plt.ylabel("Average time (sec)")
+#     plt.savefig("graph" + str(int(linspaceSpacing)) + ".png", dpi=800, bbox_inches="tight", pad_inches=0)
+#     plt.close()
     
-    plt.figure(2)
-    plt.plot(allRatios, allTimes)
-    plt.axis([0.0, 1.0, 0.0, 0.006])
-    plt.title("All Spacings")
-    plt.xlabel("Ratio")
-    plt.ylabel("Average time (sec)")
-    plt.savefig("graphAll.png", dpi=800, bbox_inches="tight", pad_inches=0)
-    plt.close()
+#     plt.figure(2)
+#     plt.plot(allRatios, allTimes)
+#     plt.axis([0.0, 1.0, 0.0, 0.006])
+#     plt.title("All Spacings")
+#     plt.xlabel("Ratio")
+#     plt.ylabel("Average time (sec)")
+#     plt.savefig("graphAll.png", dpi=800, bbox_inches="tight", pad_inches=0)
+#     plt.close()
     
-    np.savetxt("allMinRatios.txt")
-    np.savetxt("allMinTimes.txt")
+#     np.savetxt("allMinRatios.txt")
+#     np.savetxt("allMinTimes.txt")
