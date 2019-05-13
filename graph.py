@@ -98,7 +98,7 @@ class ConstraintNetwork:
     """
     def search(self, all_solutions = True):
         unassigned = self.nodes.keys() # Should this be self.nodes.keys()?
-        unassigned.sort(key=lambda x : len(self.nodes[x])) #sort nodes from smallest to largest domain
+        unassigned = sorted(unassigned, key=lambda x : len(self.nodes[x])) #sort nodes from smallest to largest domain
         self.solutions = [] #store solutions in class
         self.nodes_expanded = 0 #store expanded nodes in class
         self.run_search({}, unassigned, all_solutions) #run search with an empty set for known
@@ -204,6 +204,7 @@ class ConstraintNetwork:
                 if (check_node == -1):
                     return
                 changed = check_node or (changed == 1)
+                
             
 
 
@@ -260,69 +261,13 @@ class ConstraintNetwork:
             pass
         return False
 
-cn = ConstraintNetwork("test.csv")
-print("Number of values before AC: ", cn.get_num_values())
-print("Running AC")
-cn.arc_consistency(1)
-print("Nodes in CSP: ", cn.nodes)
-print("Number of values after AC: ", cn.get_num_values())
-results = cn.search(False)
-print("First solution:", results[0][0])
-print("Number of results: ", len(results[0]))
-print("Nodes expanded: ", results[1])
-
-# import time
-# import numpy as np
-
-# allMinTimes = []
-# allMinRatios = []
-# for linspaceSpacing in np.linspace(1, 50, 50):
-#     print("Linspace Spacing: " + str(int(linspaceSpacing)))
-#     allRatios = np.linspace(0.0, 1.0, int(linspaceSpacing))
-#     allTimes = []
-    
-#     print("All ratios: " + str(allRatios))
-    
-#     for ratio in allRatios:
-#         totalTime = 0.0
-#         nTrials = 1000
-#         for i in range(nTrials):
-#             cn = ConstraintNetwork("sudoku.csv")
-            
-#             start = time.time()
-#             cn.arc_consistency(ratio)
-#             results = cn.search()
-#             end = time.time()
-            
-#             totalTime += (end - start)
-#         print("Ratio: " + str(ratio) + "\tTime taken: " + str(totalTime/float(nTrials)))
-#         allTimes.append(totalTime/float(nTrials))
-    
-#     import matplotlib.pyplot as plt
-#     minIdx = np.argmin(allTimes)
-#     print("Min ratio: " + str(allRatios[minIdx]))
-#     print("Min time: " + str(allTimes[minIdx]))
-    
-#     allMinRatios.append(allRatios[minIdx])
-#     allMinTimes.append(allTimes[minIdx])
-    
-#     plt.figure(1)
-#     plt.plot(allRatios, allTimes)
-#     plt.axis([0.0, 1.0, 0.0, 0.006])
-#     plt.title(str(int(linspaceSpacing)) + " Spacings between Ratio Values of 0.0 and 1.0")
-#     plt.xlabel("Ratio")
-#     plt.ylabel("Average time (sec)")
-#     plt.savefig("graph" + str(int(linspaceSpacing)) + ".png", dpi=800, bbox_inches="tight", pad_inches=0)
-#     plt.close()
-    
-#     plt.figure(2)
-#     plt.plot(allRatios, allTimes)
-#     plt.axis([0.0, 1.0, 0.0, 0.006])
-#     plt.title("All Spacings")
-#     plt.xlabel("Ratio")
-#     plt.ylabel("Average time (sec)")
-#     plt.savefig("graphAll.png", dpi=800, bbox_inches="tight", pad_inches=0)
-#     plt.close()
-    
-#     np.savetxt("allMinRatios.txt")
-#     np.savetxt("allMinTimes.txt")
+# cn = ConstraintNetwork("test.csv")
+# print("Number of values before AC: ", cn.get_num_values())
+# print("Running AC")
+# cn.arc_consistency(1)
+# print("Nodes in CSP: ", cn.nodes)
+# print("Number of values after AC: ", cn.get_num_values())
+# results = cn.search(False)
+# print("First solution:", results[0][0])
+# print("Number of results: ", len(results[0]))
+# print("Nodes expanded: ", results[1])

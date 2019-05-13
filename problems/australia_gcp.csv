@@ -1,0 +1,17 @@
+Nodes
+WA,1
+NT,1,2,3
+SA,1,2,3
+Q,1,2,3
+NSW,1,2,3
+V,1,2,3
+Constraints
+WA,!=,NT
+WA,!=,SA
+NT,!=,SA
+NT,!=,Q
+SA,!=,Q
+SA,!=,NSW
+Q,!=,NSW
+SA,!=,V
+NSW,!=,V
